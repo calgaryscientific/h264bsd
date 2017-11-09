@@ -29,7 +29,8 @@ file "h264bsd_asm.js" => o_files do
 	if OS.windows?
 		sh "emcc #{o_files.join(' ')} --memory-init-file 0 -s TOTAL_MEMORY=134217728 -s EXPORT_ALL=1 #{EMCC_FLAGS} -o h264bsd_asm.js"
 	else
-        sh "emcc #{o_files.join(' ')} --memory-init-file 0 -s TOTAL_MEMORY=134217728 -s EXPORTED_FUNCTIONS='[\"#{export_functions.join('", "')}\"]' #{EMCC_FLAGS} -o h264bsd_asm.js"
+       # sh "emcc #{o_files.join(' ')} --memory-init-file 0 -s WASM=1 -s TOTAL_MEMORY=134217728 -s EXPORTED_FUNCTIONS='[\"#{export_functions.join('", "')}\"]' #{EMCC_FLAGS} -o h264bsd_asm.js"
+    	 sh "emcc #{o_files.join(' ')} --memory-init-file 0 -s TOTAL_MEMORY=134217728 -s EXPORTED_FUNCTIONS='[\"#{export_functions.join('", "')}\"]' #{EMCC_FLAGS} -o h264bsd_asm.js"
     end
 end
 
@@ -68,4 +69,4 @@ task :setup do
 	puts("Ready to go")
 end
 
-task :default => [:setup, "h264bsd.min.js", "h264bsd_decoder.min.js"]
+task :default => [:clean, :setup, "h264bsd.min.js", "h264bsd_decoder.min.js"]

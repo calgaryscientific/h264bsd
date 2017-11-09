@@ -156,8 +156,11 @@ H264bsdDecoder.prototype.decode = function() {
         var pBytesRead = module._malloc(4);
 
         var bytesRead =0;
+        var start = performance.now();
         var retCode = module._h264bsdDecode(pStorage, pInput + inputOffset, inputLength - inputOffset, 0, pBytesRead);
-        
+        var duration = performance.now() - start;
+        console.log('H.264 decode time is: ' + duration + ' ms');
+
         if (retCode == 3 || retCode == 4 || retCode == 5)
             bytesRead = 0;
         else
@@ -330,14 +333,16 @@ H264bsdDecoder.prototype.croppingParams = function() {
     };
 };
 
-try
-{
-    var decoder = new H264bsdDecoder(Module)
-    addEventListener('message', function(e) {    
-        decoder.queueInput(e.data)    
-    });
-}
-catch(e)
-{
-    postMessage({statusCode: H264bsdDecoder.ERROR});
+try {
+   var decoder;
+    Module['onRuntimeInitialized'] = function(){
+        decoder = new H264bsdDecoder(Module);
+        addEventListener("message", function(e) {
+            decoder.queueInput(e.data)
+        })
+    }
+} catch (e) {
+   postMessage({
+       statusCode: H264bsdDecoder.ERROR
+   })
 }
