@@ -1,8 +1,8 @@
 require 'os'
 
-EMCC_FLAGS = ENV["EMCC_FLAGS"] || "-O3 -D_ERROR_PRINT"
+EMCC_FLAGS = ENV["EMCC_FLAGS"] || "-O3 -D_ERROR_PRINT -s WASM=1"
 
-EMCC_FLAGS = "-O0 -g4 -D_ASSERT_USED -D_ERROR_PRINT" if ENV["DEBUG"]
+EMCC_FLAGS = "-O0 -g4 -D_ASSERT_USED -D_ERROR_PRINT -s WASM=1" if ENV["DEBUG"]
 
 rule '.o' => ['.c'] do |t|
   sh "emcc #{t.source} -c #{EMCC_FLAGS} -o #{t.name}"
@@ -23,13 +23,19 @@ export_functions = [
 	"_h264bsdCroppingParams",
 	"_h264bsdCheckValidParamSets",
 	"_h264bsdConvertToRGBA",
+	"_malloc",
+	"_free"
+]
+
+export_runtime_functions = [
+	'getValue', 
 ]
 
 file "h264bsd_asm.js" => o_files do 
 	if OS.windows?
 		sh "emcc #{o_files.join(' ')} --memory-init-file 0 -s TOTAL_MEMORY=134217728 -s EXPORT_ALL=1 #{EMCC_FLAGS} -o h264bsd_asm.js"
 	else
-        sh "emcc #{o_files.join(' ')} --memory-init-file 0 -s TOTAL_MEMORY=134217728 -s EXPORTED_FUNCTIONS='[\"#{export_functions.join('", "')}\"]' #{EMCC_FLAGS} -o h264bsd_asm.js"
+		sh "emcc #{o_files.join(' ')} --memory-init-file 0 -s TOTAL_MEMORY=134217728 -s EXTRA_EXPORTED_RUNTIME_METHODS='[\"#{export_runtime_functions.join('", "')}\"]' -s EXPORTED_FUNCTIONS='[\"#{export_functions.join('", "')}\"]' #{EMCC_FLAGS} -o h264bsd_asm.js"
     end
 end
 

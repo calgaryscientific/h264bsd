@@ -332,10 +332,15 @@ H264bsdDecoder.prototype.croppingParams = function() {
 
 try
 {
+
+    
+        
+     Module.onRuntimeInitialized = function() {
     var decoder = new H264bsdDecoder(Module)
     addEventListener('message', function(e) {    
         decoder.queueInput(e.data)    
     });
+}
 }
 catch(e)
 {
