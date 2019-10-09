@@ -44,6 +44,16 @@ function H264bsdDecoder(module) {
     this.onPictureReady = null;
     this.onHeadersReady = null;
 
+    this.pBytesRead = module._malloc(4);
+    this.pPicId = module._malloc(4);
+    this.pIsIdrPic = module._malloc(4);
+    this.pNumErrMbs = module._malloc(4);
+    this.pCroppingFlag = module._malloc(4);
+    this.pLeftOffset = module._malloc(4);
+    this.pWidth = module._malloc(4);
+    this.pTopOffset = module._malloc(4);
+    this.pHeight = module._malloc(4);
+
     this.pStorage = module._h264bsdAlloc();
     module._h264bsdInit(this.pStorage, 0);
 };
@@ -63,6 +73,15 @@ H264bsdDecoder.prototype.release = function() {
     var module = this.module;
     var pStorage = this.pStorage;
     var pInput = this.pInput;
+    var pPicId = this.pPicId;
+    var pIsIdrPic = this.pIsIdrPic;
+    var pNumErrMbs = this.pNumErrMbs;
+    var pBytesRead = this.pBytesRead;
+    var pCroppingFlag = this.pCroppingFlag;
+    var pLeftOffset = this.pLeftOffset;
+    var pWidth = this.pWidth;
+    var pTopOffset = this.pTopOffset;
+    var pHeight = this.pHeight;
 
     if(pStorage != 0) {
         module._h264bsdShutdown(pStorage);
@@ -73,10 +92,30 @@ H264bsdDecoder.prototype.release = function() {
         module._free(pInput);
     }
 
+    module._free(pPicId);
+    module._free(pIsIdrPic);
+    module._free(pNumErrMbs);
+    module._free(pBytesRead);
+    module._free(pCroppingFlag);
+    module._free(pLeftOffset);
+    module._free(pWidth);
+    module._free(pTopOffset);
+    module._free(pHeight);
+
     this.pStorage = 0;
     this.pInput = 0;
     this.inputLength = 0;
     this.inputOffset = 0;
+
+    this.pPicId = 0;
+    this.pIsIdrPic = 0;
+    this.pNumErrMbs = 0;
+    this.pBytesRead = 0;
+    this.pCroppingFlag = 0;
+    this.pLeftOffset = 0;
+    this.pWidth = 0;
+    this.pTopOffset = 0;
+    this.pHeight = 0;
 };
 
 /**
@@ -112,12 +151,10 @@ H264bsdDecoder.prototype.queueInput = function(data) {
         inputLength = newInputLength;
         inputOffset = 0;
     }
-    
+
     this.pInput = pInput;
     this.inputLength = inputLength;
     this.inputOffset = inputOffset;
-
-    this.decode();
 }
 
 /**
@@ -137,23 +174,20 @@ H264bsdDecoder.prototype.decode = function() {
     var module = this.module;
     var pStorage = this.pStorage;
     var pInput = this.pInput;
+    var pBytesRead = this.pBytesRead;
     var inputLength = this.inputLength;
     var inputOffset = this.inputOffset;
 
     if(pInput == 0) return H264bsdDecoder.NO_INPUT;
 
-    var pBytesRead = module._malloc(4);
-
     var bytesRead = 0;
     var retCode = module._h264bsdDecode(pStorage, pInput + inputOffset, inputLength - inputOffset, 0, pBytesRead);
-    
+
     if (retCode == H264bsdDecoder.RDY ||
         retCode == H264bsdDecoder.PIC_RDY ||
         retCode == H264bsdDecoder.HDRS_RDY) {
         bytesRead = module.getValue(pBytesRead, 'i32');
     }
-    
-    module._free(pBytesRead);
 
     inputOffset += bytesRead;
 
@@ -175,6 +209,8 @@ H264bsdDecoder.prototype.decode = function() {
     if(retCode == H264bsdDecoder.HDRS_RDY && this.onHeadersReady instanceof Function) {
         this.onHeadersReady();
     }
+
+    return retCode;
 };
 
 /**
@@ -182,18 +218,12 @@ H264bsdDecoder.prototype.decode = function() {
  */
 H264bsdDecoder.prototype.nextOutputPicture = function() {
     var module = this.module;
-    var pStorage = this.pStorage; 
-
-    var pPicId = module._malloc(4);
-    var pIsIdrPic = module._malloc(4);
-    var pNumErrMbs = module._malloc(4);
+    var pStorage = this.pStorage;
+    var pPicId = this.pPicId;
+    var pIsIdrPic = this.pIsIdrPic;
+    var pNumErrMbs = this.pNumErrMbs;
 
     var pBytes = module._h264bsdNextOutputPicture(pStorage, pPicId, pIsIdrPic, pNumErrMbs);
-
-    // None of these values are currently used.
-    module._free(pPicId);
-    module._free(pIsIdrPic);
-    module._free(pNumErrMbs);
 
     var outputLength = this.outputPictureSizeBytes();
     var outputBytes = new Uint8Array(module.HEAPU8.subarray(pBytes, pBytes + outputLength));
@@ -208,18 +238,12 @@ H264bsdDecoder.prototype.nextOutputPicture = function() {
  */
 H264bsdDecoder.prototype.nextOutputPictureRGBA = function() {
     var module = this.module;
-    var pStorage = this.pStorage; 
-
-    var pPicId = module._malloc(4);
-    var pIsIdrPic = module._malloc(4);
-    var pNumErrMbs = module._malloc(4);
+    var pStorage = this.pStorage;
+    var pPicId = this.pPicId;
+    var pIsIdrPic = this.pIsIdrPic;
+    var pNumErrMbs = this.pNumErrMbs;
 
     var pBytes = module._h264bsdNextOutputPictureRGBA(pStorage, pPicId, pIsIdrPic, pNumErrMbs);
-
-    // None of these values are currently used.
-    module._free(pPicId);
-    module._free(pIsIdrPic);
-    module._free(pNumErrMbs);
 
     var outputLength = this.outputPictureSizeBytesRGBA();
     var outputBytes = new Uint8Array(module.HEAPU8.subarray(pBytes, pBytes + outputLength));
@@ -280,26 +304,19 @@ H264bsdDecoder.prototype.outputPictureSizeBytesRGBA = function() {
 H264bsdDecoder.prototype.croppingParams = function() {
     var module = this.module;
     var pStorage = this.pStorage;
-    
-    var pCroppingFlag = module._malloc(4);
-    var pLeftOffset = module._malloc(4);
-    var pWidth = module._malloc(4);
-    var pTopOffset = module._malloc(4);
-    var pHeight = module._malloc(4);
+    var pCroppingFlag = this.pCroppingFlag;
+    var pLeftOffset = this.pLeftOffset;
+    var pWidth = this.pWidth;
+    var pTopOffset = this.pTopOffset;
+    var pHeight = this.pHeight;
 
     module._h264bsdCroppingParams(pStorage, pCroppingFlag, pLeftOffset, pWidth, pTopOffset, pHeight);
-    
-    var croppingFlag = module.getValue(pCroppingFlag, 'i32');  
-    var leftOffset = module.getValue(pLeftOffset, 'i32');  
+
+    var croppingFlag = module.getValue(pCroppingFlag, 'i32');
+    var leftOffset = module.getValue(pLeftOffset, 'i32');
     var width = module.getValue(pWidth, 'i32');
     var topOffset = module.getValue(pTopOffset, 'i32');
     var height = module.getValue(pHeight, 'i32');
-
-    module._free(pCroppingFlag);
-    module._free(pLeftOffset);
-    module._free(pWidth);
-    module._free(pTopOffset);
-    module._free(pHeight);
 
     if(croppingFlag === 0) return null;
 
