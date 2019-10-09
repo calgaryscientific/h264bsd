@@ -1,7 +1,7 @@
 require 'json'
 
-EMCC_FLAGS = ENV["EMCC_FLAGS"] || "-O0 -g4 -D_ASSERT_USED -D_ERROR_PRINT --memory-init-file 0 -s TOTAL_MEMORY=67108864 -s WASM=0" if ENV["DEBUG"]
-EMCC_FLAGS = ENV["EMCC_FLAGS"] || "-O3 -D_ERROR_PRINT --memory-init-file 0 -s TOTAL_MEMORY=67108864 -s WASM=0" unless ENV["DEBUG"]
+EMCC_FLAGS = ENV["EMCC_FLAGS"] || "-O0 -g4 -D_ASSERT_USED -D_ERROR_PRINT --memory-init-file 0 -s TOTAL_MEMORY=67108864 -s WASM=1" if ENV["DEBUG"]
+EMCC_FLAGS = ENV["EMCC_FLAGS"] || "-O3 -D_ERROR_PRINT --memory-init-file 0 -s TOTAL_MEMORY=67108864 -s WASM=1" unless ENV["DEBUG"]
 
 c_files = FileList["../src/*.c"]
 

@@ -143,38 +143,43 @@ H264bsdDecoder.prototype.decode = function() {
     if(pInput == 0) return H264bsdDecoder.NO_INPUT;
 
     var pBytesRead = module._malloc(4);
+    while (pInput > 0)
+    {
+        
 
-    var bytesRead = 0;
-    var retCode = module._h264bsdDecode(pStorage, pInput + inputOffset, inputLength - inputOffset, 0, pBytesRead);
-    
-    if (retCode == H264bsdDecoder.RDY ||
-        retCode == H264bsdDecoder.PIC_RDY ||
-        retCode == H264bsdDecoder.HDRS_RDY) {
-        bytesRead = module.getValue(pBytesRead, 'i32');
+        var bytesRead = 0;
+        var retCode = module._h264bsdDecode(pStorage, pInput + inputOffset, inputLength - inputOffset, 0, pBytesRead);
+        
+        if (retCode == H264bsdDecoder.RDY ||
+            retCode == H264bsdDecoder.PIC_RDY ||
+            retCode == H264bsdDecoder.HDRS_RDY) {
+            bytesRead = module.getValue(pBytesRead, 'i32');
+        }
+        
+        
+
+        inputOffset += bytesRead;
+
+        if(inputOffset >= inputLength) {
+            module._free(pInput);
+            pInput = 0;
+            inputOffset = 0;
+            inputLength = 0;
+        }
+
+        this.pInput = pInput;
+        this.inputLength = inputLength;
+        this.inputOffset = inputOffset;
+
+        if(retCode == H264bsdDecoder.PIC_RDY && this.onPictureReady instanceof Function) {
+            this.onPictureReady();
+        }
+
+        if(retCode == H264bsdDecoder.HDRS_RDY && this.onHeadersReady instanceof Function) {
+            this.onHeadersReady();
+        }
     }
-    
     module._free(pBytesRead);
-
-    inputOffset += bytesRead;
-
-    if(inputOffset >= inputLength) {
-        module._free(pInput);
-        pInput = 0;
-        inputOffset = 0;
-        inputLength = 0;
-    }
-
-    this.pInput = pInput;
-    this.inputLength = inputLength;
-    this.inputOffset = inputOffset;
-
-    if(retCode == H264bsdDecoder.PIC_RDY && this.onPictureReady instanceof Function) {
-        this.onPictureReady();
-    }
-
-    if(retCode == H264bsdDecoder.HDRS_RDY && this.onHeadersReady instanceof Function) {
-        this.onHeadersReady();
-    }
 };
 
 /**
@@ -196,9 +201,11 @@ H264bsdDecoder.prototype.nextOutputPicture = function() {
     module._free(pNumErrMbs);
 
     var outputLength = this.outputPictureSizeBytes();
+
     var outputBytes = new Uint8Array(module.HEAPU8.subarray(pBytes, pBytes + outputLength));
 
     return outputBytes;
+    return new Uint8Array(outputLength);
 };
 
 /**
