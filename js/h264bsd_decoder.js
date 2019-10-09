@@ -203,9 +203,7 @@ H264bsdDecoder.prototype.nextOutputPicture = function() {
     var outputLength = this.outputPictureSizeBytes();
 
     var outputBytes = new Uint8Array(module.HEAPU8.subarray(pBytes, pBytes + outputLength));
-
     return outputBytes;
-    return new Uint8Array(outputLength);
 };
 
 /**
