@@ -5,6 +5,7 @@
     <title>h.264bsd test</title>
 </head>
 <body>
+    <a href="#" onclick="loadTestData()">Big Buck Bunny 1080p</a> OR
     <input type="file" id="file" name="file" />
     <span id="fps_display"></span>
     <br/>
@@ -111,6 +112,26 @@
 
             // Read in the image file as a data URL.
             reader.readAsArrayBuffer(f);
+        }
+
+        function loadTestData() {
+            fetch("test/test_1920x1080.h264").then(response => {
+                if (response.ok) { 
+
+                    response.arrayBuffer().then(buffer => {
+                        buf = new Uint8Array(buffer);
+                        var copy = new Uint8Array(buf)                
+                        decoder.postMessage(
+                            {'type' : 'queueInput', 'data' : copy.buffer}, 
+                            [copy.buffer]);
+                        setInterval(updateFpsCount, 1000);
+
+                        console.log('Starting decode loop');
+                    });
+            } 
+            else
+                console.log("Error: " + response.status);
+            });
         }
 
         document.getElementById('file').addEventListener('change', handleFileSelect, false);
