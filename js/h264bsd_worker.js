@@ -62,8 +62,6 @@ Module.onRuntimeInitialized = function() {
             noInput = true;
             postMessage({'type': 'noInput'});
             break;
-        default:
-            setTimeout(decodeLoop, 0);
         }
     }
 
