@@ -1,10 +1,10 @@
-# Javascript implementation
+# Javascript WebAssembly implementation
 
 This implementation was compiled with emscripten and includes tools for rendering to a canvas element with WebGL acceleration.
 
 Here's an example of how to use it:
 ```
-var decoder = new H264bsdDecoder();
+var decoder = new H264bsdDecoder(Module);
 var display = new H264bsdCanvas(myCanvasElement);
 
 // Render output to the canvas when a new picture is ready
@@ -69,9 +69,9 @@ decoder.addEventListener('message', function(e) {
     // Posted when onPictureReady is called on the worker
     case 'pictureReady':
         display.drawNextOutputPicture(
-            message.width, 
-            message.height, 
-            message.croppingParams, 
+            message.width,
+            message.height,
+            message.croppingParams,
             new Uint8Array(message.data));
         ++pictureCount;
         break;
@@ -98,9 +98,3 @@ decoder.addEventListener('message', function(e) {
 decoder.postMessage({'type' : 'queueInput', 'data' : myUint8Array.buffer}, [myUint8Array.buffer]);
 
 ```
-## Minified Javascript
-
-The min directory contains minified versions of the h264bsd components:
-* `h264bsd_full.min.js` contains the decoder, canvas and asm (Everything needed to decode and display directly)
-* `h264bsd_worker.min.js` contains the decoder, asm and web worker (Everything needed to execute the worker, and can be the target of a new Worker creation)
-* `h264bsd_canvas.min.js` contains the convas (To be used in conjunction with `h264bsd_worker.min.js`)

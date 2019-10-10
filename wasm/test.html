@@ -5,7 +5,6 @@
     <title>h.264bsd test</title>
 </head>
 <body>
-    <a href="#" onclick="loadTestData()">Big Buck Bunny 1080p</a> OR
     <input type="file" id="file" name="file" />
     <span id="fps_display"></span>
     <br/>
@@ -13,28 +12,17 @@
     <!--This is where we will display decoded frames-->
     <canvas id="canvas" width="640" height="480" style="border:solid;"></canvas>
 
-    <script src="h264bsd_canvas.js"></script> 
-    <!--<script src="min/h264bsd_canvas.min.js"></script> -->
+    <script src="h264bsd_canvas.js"></script>
 
-    <script type="text/javascript">         
-        var canvas = document.getElementById('canvas');             
-
-        StatusCode = {};
-        StatusCode.RDY = 0;
-        StatusCode.PIC_RDY = 1;
-        StatusCode.HDRS_RDY = 2;
-        StatusCode.ERROR = 3;
-        StatusCode.PARAM_SET_ERROR = 4;
-        StatusCode.MEMALLOC_ERROR = 5;
-        StatusCode.NO_INPUT = 1024;
+    <script type="text/javascript">
+        var canvas = document.getElementById('canvas');
 
         var pictureCount = 0;
         var lastPictureCount = 0;
 
         // Create the decoder and canvas
         var decoder = new Worker('h264bsd_worker.js');
-        // var decoder = new Worker('min/h264bsd_worker.min.js');
-        var display = new H264bsdCanvas(canvas); 
+        var display = new H264bsdCanvas(canvas);
 
         console.log('Created decoder and canvas');
 
@@ -66,9 +54,9 @@
                 break;
             case 'pictureReady':
                 display.drawNextOutputPicture(
-                    message.width, 
-                    message.height, 
-                    message.croppingParams, 
+                    message.width,
+                    message.height,
+                    message.croppingParams,
                     new Uint8Array(message.data));
                 ++pictureCount;
                 break;
@@ -78,8 +66,6 @@
             }
         });
 
-
-        
         function updateFpsCount() {
             var picturesSinceLastUpdate = pictureCount - lastPictureCount;
             var fpsDisplay = document.getElementById('fps_display');
@@ -94,44 +80,24 @@
         // Use the FileReader to get the bytes into the decoder
         function handleFileSelect(evt) {
             var f = evt.target.files[0]; // FileList object
-            
+
             var reader = new FileReader();
 
             // Closure to capture the file information.
             reader.onload = function(e) {
                 buf = new Uint8Array(e.target.result);
 
-                var copy = new Uint8Array(buf)                
+                var copy = new Uint8Array(buf)
                 decoder.postMessage(
-                    {'type' : 'queueInput', 'data' : copy.buffer}, 
+                    {'type' : 'queueInput', 'data' : copy.buffer},
                     [copy.buffer]);
                 setInterval(updateFpsCount, 1000);
 
-                console.log('Starting decode loop');
+                console.log('Starting encode loop');
             };
 
             // Read in the image file as a data URL.
             reader.readAsArrayBuffer(f);
-        }
-
-        function loadTestData() {
-            fetch("test/test_1920x1080.h264").then(response => {
-                if (response.ok) { 
-
-                    response.arrayBuffer().then(buffer => {
-                        buf = new Uint8Array(buffer);
-                        var copy = new Uint8Array(buf)                
-                        decoder.postMessage(
-                            {'type' : 'queueInput', 'data' : copy.buffer}, 
-                            [copy.buffer]);
-                        setInterval(updateFpsCount, 1000);
-
-                        console.log('Starting decode loop');
-                    });
-            } 
-            else
-                console.log("Error: " + response.status);
-            });
         }
 
         document.getElementById('file').addEventListener('change', handleFileSelect, false);
